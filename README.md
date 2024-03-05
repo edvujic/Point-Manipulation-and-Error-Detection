@@ -122,7 +122,36 @@ FUNCTION calculateAverageDistance(points)
     ELSE
         averageDistance <- 0
     END IF
+```
+### Identify Corner Points of Square
 
+To find the corner points of the smallest axis-aligned cube (also known as an axis-aligned bounding box or AABB) that contains all points in a 3D space, you don't need a complex formula. The process involves finding the minimum and maximum coordinates along each axis (X, Y, and Z) among all the points in the dataset. The corner points of the cube can then be determined by combining these minimum and maximum values.
+
+```pseudocode
+FUNCTION identifyCornerPoints(files)
+    FOR EACH filename IN files DO
+        file <- OPEN filename for reading
+        IF NOT file is open THEN
+            OUTPUT "Could not open file: " + filename
+            CONTINUE to next file
+        END IF
+
+        minPoint <- Point(MAX_VALUE, MAX_VALUE, MAX_VALUE)
+        maxPoint <- Point(MIN_VALUE, MIN_VALUE, MIN_VALUE)
+
+        WHILE NOT end of file DO
+            line <- READ next line from file
+            IF line is a data line THEN
+                point <- EXTRACT point coordinates from line
+                UPDATE minPoint and maxPoint with point
+            END IF
+        END WHILE
+        CLOSE file
+
+        OUTPUT corner points for filename using minPoint and maxPoint
+    END FOR
+END FUNCTION
+```
     RETURN averageDistance
 END FUNCTION
 ```
