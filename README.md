@@ -1,1 +1,1 @@
-# Point-Manipulation-and-Error-Detection
+# Point Manipulation and Error Detection
