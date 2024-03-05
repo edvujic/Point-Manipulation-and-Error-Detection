@@ -122,10 +122,28 @@ FUNCTION calculateAverageDistance(points)
     ELSE
         averageDistance <- 0
     END IF
+    RETURN averageDistance
+END FUNCTION
 ```
 ### Identify Corner Points of Square
 
 To find the corner points of the smallest axis-aligned cube (also known as an axis-aligned bounding box or AABB) that contains all points in a 3D space, you don't need a complex formula. The process involves finding the minimum and maximum coordinates along each axis (X, Y, and Z) among all the points in the dataset. The corner points of the cube can then be determined by combining these minimum and maximum values.
+
+#### AABB Corner Points Formula
+
+Given a set of points in 3D space, the corner points of the AABB are derived using the following:
+
+- Let `P` be the set of all points `(x, y, z)`.
+- Define `minPoint` as `(minX, minY, minZ)` where:
+  - `minX = min({x | (x, y, z) ∈ P})`
+  - `minY = min({y | (x, y, z) ∈ P})`
+  - `minZ = min({z | (x, y, z) ∈ P})`
+- Define `maxPoint` as `(maxX, maxY, maxZ)` where:
+  - `maxX = max({x | (x, y, z) ∈ P})`
+  - `maxY = max({y | (x, y, z) ∈ P})`
+  - `maxZ = max({z | (x, y, z) ∈ P})`
+
+The corner points of the AABB are the 8 unique combinations of `minX`, `minY`, `minZ`, `maxX`, `maxY`, and `maxZ`.
 
 ```pseudocode
 FUNCTION identifyCornerPoints(files)
@@ -150,9 +168,6 @@ FUNCTION identifyCornerPoints(files)
 
         OUTPUT corner points for filename using minPoint and maxPoint
     END FOR
-END FUNCTION
-```
-    RETURN averageDistance
 END FUNCTION
 ```
 
