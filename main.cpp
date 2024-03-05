@@ -7,6 +7,8 @@
 #include <sstream>
 #include <limits>
 #include <cmath>
+#include <iomanip> // For std::fixed and std::setprecision
+#include <sstream> // For std::istringstream
 
 struct Point
 {
@@ -25,9 +27,20 @@ struct Point
 void listFiles();
 std::vector<std::string> getSuitablePointFiles();
 void checkClosestAndFarthestPoints(const std::vector<std::string> &files);
-void identifyCornerPoints();
+void identifyCornerPoints(const std::vector<std::string>& files);
 void specifySphereAndFindPoints();
 void calculateAverageDistance();
+
+bool isHeaderLine(const std::string& line) {
+    // List of possible header keywords
+    const std::vector<std::string> headerKeywords = {"VERSION", "FIELDS", "SIZE", "TYPE", "COUNT", "WIDTH", "HEIGHT", "VIEWPOINT", "POINTS", "DATA", "FORMAT"};
+    for (const auto& keyword : headerKeywords) {
+        if (line.find(keyword) != std::string::npos) {
+            return true;
+        }
+    }
+    return false;
+}
 
 bool promptRepeatMenu()
 {
@@ -126,7 +139,7 @@ int main()
             checkClosestAndFarthestPoints(suitableFiles);
             break;
         case 3:
-            identifyCornerPoints();
+            identifyCornerPoints(suitableFiles);
             break;
         case 4:
             specifySphereAndFindPoints();
@@ -348,9 +361,52 @@ void checkClosestAndFarthestPoints(const std::vector<std::string> &files)
               << ") with distance " << maxDistance << std::endl;
 }
 
-void identifyCornerPoints()
-{
-    // Implement smallest cube corner points identification
+void identifyCornerPoints(const std::vector<std::string>& files) {
+    for (const std::string& filename : files) {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Could not open file: " << filename << std::endl;
+            continue;
+        }
+
+        Point minPoint{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
+        Point maxPoint{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest()};
+
+        std::string line;
+        while (getline(file, line)) {
+            if (!isHeaderLine(line)) { // Skip header lines
+                std::istringstream iss(line);
+                Point point;
+                if (iss >> point.x >> point.y >> point.z) {
+                    minPoint.x = std::min(minPoint.x, point.x);
+                    minPoint.y = std::min(minPoint.y, point.y);
+                    minPoint.z = std::min(minPoint.z, point.z);
+                    maxPoint.x = std::max(maxPoint.x, point.x);
+                    maxPoint.y = std::max(maxPoint.y, point.y);
+                    maxPoint.z = std::max(maxPoint.z, point.z);
+                }
+            }
+        }
+        file.close();
+
+        // Set the precision for floating-point values to three decimal places
+        std::cout << std::fixed << std::setprecision(3);
+
+        // Output the results for this file
+        std::cout << "File: " << filename << std::endl;
+        std::cout << "Smallest cube corner points:" << std::endl;
+        std::cout << "(" << minPoint.x << ", " << minPoint.y << ", " << minPoint.z << ")" << std::endl;
+        std::cout << "(" << maxPoint.x << ", " << minPoint.y << ", " << minPoint.z << ")" << std::endl;
+        std::cout << "(" << minPoint.x << ", " << maxPoint.y << ", " << minPoint.z << ")" << std::endl;
+        std::cout << "(" << maxPoint.x << ", " << maxPoint.y << ", " << minPoint.z << ")" << std::endl;
+        std::cout << "(" << minPoint.x << ", " << minPoint.y << ", " << maxPoint.z << ")" << std::endl;
+        std::cout << "(" << maxPoint.x << ", " << minPoint.y << ", " << maxPoint.z << ")" << std::endl;
+        std::cout << std::endl;
+
+        // Reset the precision if needed elsewhere with default behavior
+        std::cout.unsetf(std::ios_base::fixed);
+        std::cout.precision(6);
+    }
 }
 
 void specifySphereAndFindPoints()
