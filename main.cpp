@@ -5,11 +5,26 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <limits>
+#include <cmath>
+
+struct Point
+{
+    double x, y, z;
+
+    // Calculate Euclidean distance between two points
+    double distanceTo(const Point &other) const
+    {
+        return std::sqrt((x - other.x) * (x - other.x) +
+                         (y - other.y) * (y - other.y) +
+                         (z - other.z) * (z - other.z));
+    }
+};
 
 // Function prototypes
 void listFiles();
 std::vector<std::string> getSuitablePointFiles();
-void checkClosestAndFarthestPoints();
+void checkClosestAndFarthestPoints(const std::vector<std::string> &files);
 void identifyCornerPoints();
 void specifySphereAndFindPoints();
 void calculateAverageDistance();
@@ -37,8 +52,18 @@ bool checkVersion(const std::string &line)
     std::string versionLabel;
     int version;
 
+    // Read the label and the version number as an integer
     if (iss >> versionLabel >> version && versionLabel == "VERSION")
     {
+        // Now check if there is any additional character after reading the integer
+        // which would indicate that the version number is not a whole number.
+        char extraChar;
+        if (iss >> extraChar)
+        {
+            // Found an extra character after the version number.
+            return false;
+        }
+        // Successfully read "VERSION" followed by a whole number and nothing else.
         return true;
     }
     return false;
@@ -98,7 +123,7 @@ int main()
 
             break;
         case 2:
-            checkClosestAndFarthestPoints();
+            checkClosestAndFarthestPoints(suitableFiles);
             break;
         case 3:
             identifyCornerPoints();
@@ -261,9 +286,66 @@ std::vector<std::string> getSuitablePointFiles()
     closedir(dir);
     return suitableFiles;
 }
-void checkClosestAndFarthestPoints()
+void checkClosestAndFarthestPoints(const std::vector<std::string> &files)
 {
-    // Implement closest and farthest points check
+    double maxDistance = std::numeric_limits<double>::min();
+    double minDistance = std::numeric_limits<double>::max();
+    Point maxPointA, maxPointB, minPointA, minPointB;
+
+    for (const std::string &filename : files)
+    {
+        std::ifstream file(filename);
+        if (!file.is_open())
+        {
+            std::cerr << "Could not open file: " << filename << std::endl;
+            continue;
+        }
+
+        std::vector<Point> points;
+        std::string line;
+        while (getline(file, line))
+        {
+            std::istringstream iss(line);
+            Point p;
+            if (iss >> p.x >> p.y >> p.z)
+            {
+                points.push_back(p);
+                // Skip the rest of the line in case there are RGB values or other extra data
+                iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            }
+        }
+        file.close();
+
+        // Calculate distances between all pairs of points
+        for (size_t i = 0; i < points.size(); ++i)
+        {
+            for (size_t j = i + 1; j < points.size(); ++j)
+            {
+                double distance = points[i].distanceTo(points[j]);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    minPointA = points[i];
+                    minPointB = points[j];
+                }
+                if (distance > maxDistance)
+                {
+                    maxDistance = distance;
+                    maxPointA = points[i];
+                    maxPointB = points[j];
+                }
+            }
+        }
+    }
+
+    // Output the results
+    std::cout << "Closest points: (" << minPointA.x << ", " << minPointA.y << ", " << minPointA.z
+              << ") and (" << minPointB.x << ", " << minPointB.y << ", " << minPointB.z
+              << ") with distance " << minDistance << std::endl;
+
+    std::cout << "Farthest points: (" << maxPointA.x << ", " << maxPointA.y << ", " << maxPointA.z
+              << ") and (" << maxPointB.x << ", " << maxPointB.y << ", " << maxPointB.z
+              << ") with distance " << maxDistance << std::endl;
 }
 
 void identifyCornerPoints()
