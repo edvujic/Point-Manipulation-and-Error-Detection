@@ -28,7 +28,7 @@ void listFiles();
 std::vector<std::string> getSuitablePointFiles();
 void checkClosestAndFarthestPoints(const std::vector<std::string> &files);
 void identifyCornerPoints(const std::vector<std::string>& files);
-void specifySphereAndFindPoints();
+void specifySphereAndFindPoints(const std::vector<std::string>& suitablePointFiles);
 void calculateAverageDistance();
 
 bool isHeaderLine(const std::string& line) {
@@ -142,7 +142,7 @@ int main()
             identifyCornerPoints(suitableFiles);
             break;
         case 4:
-            specifySphereAndFindPoints();
+            specifySphereAndFindPoints(suitableFiles);
             break;
         case 5:
             calculateAverageDistance();
@@ -401,6 +401,8 @@ void identifyCornerPoints(const std::vector<std::string>& files) {
         std::cout << "(" << maxPoint.x << ", " << maxPoint.y << ", " << minPoint.z << ")" << std::endl;
         std::cout << "(" << minPoint.x << ", " << minPoint.y << ", " << maxPoint.z << ")" << std::endl;
         std::cout << "(" << maxPoint.x << ", " << minPoint.y << ", " << maxPoint.z << ")" << std::endl;
+        std::cout << "(" << minPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << ")" << std::endl;
+        std::cout << "(" << maxPoint.x << ", " << maxPoint.y << ", " << maxPoint.z << ")" << std::endl;
         std::cout << std::endl;
 
         // Reset the precision if needed elsewhere with default behavior
@@ -409,9 +411,54 @@ void identifyCornerPoints(const std::vector<std::string>& files) {
     }
 }
 
-void specifySphereAndFindPoints()
-{
-    // Implement sphere specification and points within sphere identification
+void specifySphereAndFindPoints(const std::vector<std::string>& suitablePointFiles) {
+    Point sphereCenter;
+    double diameter, radius;
+
+    // Prompt user for sphere center and diameter
+    std::cout << "Enter the center of the sphere (x y z): ";
+    std::cin >> sphereCenter.x >> sphereCenter.y >> sphereCenter.z;
+
+    std::cout << "Enter the diameter of the sphere: ";
+    std::cin >> diameter;
+    radius = diameter / 2.0;
+
+    for (const std::string& filename : suitablePointFiles) {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Could not open file: " << filename << std::endl;
+            continue;
+        }
+
+        std::string line;
+        std::vector<Point> pointsInsideSphere;
+        while (getline(file, line)) {
+            if (!isHeaderLine(line)) { // Skip header lines
+                std::istringstream iss(line);
+                Point point;
+                if (iss >> point.x >> point.y >> point.z) {
+                    // Check if the point is inside the sphere
+                    if (point.distanceTo(sphereCenter) <= radius) {
+                        pointsInsideSphere.push_back(point);
+                    }
+                }
+            }
+        }
+        file.close();
+
+        // Print out the points inside the sphere for this file
+        std::cout << "File: " << filename << std::endl;
+        std::cout << "Points inside the sphere:" << std::endl;
+        for (const auto& point : pointsInsideSphere) {
+            std::cout << std::fixed << std::setprecision(3);
+            std::cout << "(" << point.x << ", " << point.y << ", " << point.z << ")" << std::endl;
+        }
+        std::cout << std::endl;
+
+        // Reset the precision if needed elsewhere with default behavior
+        std::cout.unsetf(std::ios_base::fixed);
+        std::cout.precision(6);
+    }
 }
 
 void calculateAverageDistance()
