@@ -9,37 +9,67 @@
 #include <cmath>
 #include <iomanip> // For std::fixed and std::setprecision
 #include <sstream> // For std::istringstream
-struct Point
-{
-    double x, y, z;
+#include "Utils.cpp"
+#include "Point.h"
 
-    // Calculate Euclidean distance between two points
-    double distanceTo(const Point &other) const
-    {
-        return std::sqrt((x - other.x) * (x - other.x) +
-                         (y - other.y) * (y - other.y) +
-                         (z - other.z) * (z - other.z));
-    }
-};
+Utils utils;
 
-// Function prototypes
+/**
+ * @brief Lists all files in the point_sets directory.
+ * 
+ * This function scans the point_sets directory and prints out the names of all files
+ * contained within, excluding the current (".") and parent ("..") directory entries.
+ * If the directory cannot be opened, an error message is printed to stderr.
+ */
 void listFiles();
+/**
+ * @brief Retrieves a list of point files with valid headers and matching point counts from a directory.
+ *
+ * This function scans the 'point_sets' directory, checks each file for a proper extension, 
+ * and validates the file format including the version, format, points count, and data type.
+ * It returns a list of filenames that meet all criteria. Each file's header is checked for 
+ * specific criteria, and the actual point count is compared against the expected count.
+ * If any checks fail, the file is skipped. If the directory cannot be opened or if a file 
+ * cannot be read, an error message is printed to stderr.
+ * 
+ * @return std::vector<std::string> List of filenames with valid point file headers.
+ */
 std::vector<std::string> getSuitablePointFiles();
+/**
+ * @brief Finds the closest and farthest point pairs in a collection of point files.
+ *
+ * Iterates over provided files, calculates distances between points, and tracks the minimum
+ * and maximum distances along with the corresponding point pairs.
+ *
+ * @param files A list of filenames with point data.
+ */
 void checkClosestAndFarthestPoints(const std::vector<std::string> &files);
+/**
+ * @brief Identifies the corner points of the smallest cube that contains all points in a collection of files.
+ *
+ * Iterates over provided files, reads the point data, and finds the minimum and maximum x, y, and z values.
+ * The corner points of the smallest cube are then printed for each file.
+ *
+ * @param files A list of filenames with point data.
+ */
 void identifyCornerPoints(const std::vector<std::string>& files);
+/**
+ * @brief Prompts the user for a sphere center and diameter, then finds points within the sphere in a collection of files.
+ *
+ * Iterates over provided files, reads the point data, and finds points within the specified sphere.
+ * The sphere center and diameter are prompted from the user.
+ *
+ * @param suitablePointFiles A list of filenames with point data.
+ */
 void specifySphereAndFindPoints(const std::vector<std::string>& suitablePointFiles);
+/**
+ * @brief Calculates the average distance between all points in a collection of files.
+ *
+ * Iterates over provided files, reads the point data, and calculates the average distance between all points.
+ *
+ * @param suitablePointFiles A list of filenames with point data.
+ */
 void calculateAverageDistance(const std::vector<std::string>& suitablePointFiles);
-
-bool _isHeaderLine(const std::string& line) {
-    // List of possible header keywords
-    const std::vector<std::string> headerKeywords = {"VERSION", "FIELDS", "SIZE", "TYPE", "COUNT", "WIDTH", "HEIGHT", "VIEWPOINT", "POINTS", "DATA", "FORMAT"};
-    for (const auto& keyword : headerKeywords) {
-        if (line.find(keyword) != std::string::npos) {
-            return true;
-        }
-    }
-    return false;
-}
 
 bool _promptRepeatMenu()
 {
@@ -47,60 +77,6 @@ bool _promptRepeatMenu()
     std::cout << "\nWould you like to see the menu again? (y/n): ";
     std::cin >> repeat;
     return repeat == 'y' || repeat == 'Y';
-}
-
-bool _checkFileExtension(const std::string &filename)
-{
-    if (filename.size() >= 3)
-    {
-        return filename.substr(filename.size() - 3) == ".pt";
-    }
-    return false;
-}
-
-bool _checkVersion(const std::string &line)
-{
-    std::istringstream iss(line);
-    std::string versionLabel;
-    int version;
-
-    // Read the label and the version number as an integer
-    if (iss >> versionLabel >> version && versionLabel == "VERSION")
-    {
-        // Now check if there is any additional character after reading the integer
-        // which would indicate that the version number is not a whole number.
-        char extraChar;
-        if (iss >> extraChar)
-        {
-            // Found an extra character after the version number.
-            return false;
-        }
-        // Successfully read "VERSION" followed by a whole number and nothing else.
-        return true;
-    }
-    return false;
-}
-
-bool _checkFormat(const std::string &line)
-{
-    return (line == "FORMAT x y z" || line == "FORMAT x y z r g b");
-}
-
-bool _checkData(const std::string &line)
-{
-    return (line == "DATA ascii");
-}
-
-bool _checkPointsCount(const std::string &line, int &count)
-{
-    std::istringstream iss(line);
-    std::string pointsLabel;
-
-    if (iss >> pointsLabel >> count && pointsLabel == "POINTS" && count > 0)
-    {
-        return true;
-    }
-    return false;
 }
 
 int main()
@@ -195,7 +171,7 @@ std::vector<std::string> getSuitablePointFiles()
     while ((entry = readdir(dir)) != nullptr)
     {
         std::string filename(entry->d_name);
-        if (filename[0] != '.' && _checkFileExtension(filename))
+        if (filename[0] != '.' && utils.checkFileExtension(filename))
         {
             std::ifstream file(directoryPath + std::string("/") + filename);
             if (!file.is_open())
@@ -212,28 +188,28 @@ std::vector<std::string> getSuitablePointFiles()
                 switch (lineCount)
                 {
                 case 0:
-                    if (!_checkVersion(line))
+                    if (!utils.checkVersion(line))
                     {
                         std::cerr << "Error in file " << filename << ": Invalid version format." << std::endl;
                         validHeader = false;
                     }
                     break;
                 case 1:
-                    if (!_checkFormat(line))
+                    if (!utils.checkFormat(line))
                     {
                         std::cerr << "Error in file " << filename << ": Invalid format, should be 'x y z' or 'x y z r g b'." << std::endl;
                         validHeader = false;
                     }
                     break;
                 case 2:
-                    if (!_checkPointsCount(line, pointCount))
+                    if (!utils.checkPointsCount(line, pointCount))
                     {
                         std::cerr << "Error in file " << filename << ": Invalid points count." << std::endl;
                         validHeader = false;
                     }
                     break;
                 case 3:
-                    if (!_checkData(line))
+                    if (!utils.checkData(line))
                     {
                         std::cerr << "Error in file " << filename << ": Data type must be 'ascii'." << std::endl;
                         validHeader = false;
@@ -374,7 +350,7 @@ void identifyCornerPoints(const std::vector<std::string>& files) {
 
         std::string line;
         while (getline(file, line)) {
-            if (!_isHeaderLine(line)) { // Skip header lines
+            if (!utils.isHeaderLine(line)) { // Skip header lines
                 std::istringstream iss(line);
                 Point point;
                 if (iss >> point.x >> point.y >> point.z) {
@@ -433,7 +409,7 @@ void specifySphereAndFindPoints(const std::vector<std::string>& suitablePointFil
         std::string line;
         std::vector<Point> pointsInsideSphere;
         while (getline(file, line)) {
-            if (!_isHeaderLine(line)) { // Skip header lines
+            if (!utils.isHeaderLine(line)) { // Skip header lines
                 std::istringstream iss(line);
                 Point point;
                 if (iss >> point.x >> point.y >> point.z) {
@@ -472,7 +448,7 @@ void calculateAverageDistance(const std::vector<std::string>& suitablePointFiles
         std::string line;
         std::vector<Point> points;
         while (getline(file, line)) {
-            if (!_isHeaderLine(line)) { // Skip header lines
+            if (!utils.isHeaderLine(line)) { // Skip header lines
                 std::istringstream iss(line);
                 Point point;
                 if (iss >> point.x >> point.y >> point.z) {
